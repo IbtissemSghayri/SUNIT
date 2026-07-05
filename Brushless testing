@@ -1,0 +1,41 @@
+#include <ESP32Servo.h>
+
+Servo esc;
+
+const int ESC_PIN = 13;      // GPIO relié au signal de l'ESC
+const int MIN_PULSE = 1000;  // µs - moteur arrêté
+const int MAX_PULSE = 2000;  // µs - pleins gaz
+const int ARM_PULSE  = 1000; // µs - signal d'armement (souvent = MIN_PULSE)
+
+void setup() {
+  Serial.begin(115200);
+
+  // Allocation des timers PWM (nécessaire sur ESP32)
+  ESP32PWM::allocateTimer(0);
+  esc.setPeriodHertz(50);        // Standard servo/ESC : 50 Hz
+  esc.attach(ESC_PIN, MIN_PULSE, MAX_PULSE);
+
+  Serial.println("Armement de l'ESC...");
+  esc.writeMicroseconds(ARM_PULSE);
+  delay(3000);   // Laisser le temps à l'ESC de s'armer (bip(s) attendu(s))
+  Serial.println("ESC armé. Prêt.");
+}
+
+void loop() {
+  // Test simple : montée progressive puis redescente
+  Serial.println("Accélération douce...");
+  for (int pulse = MIN_PULSE; pulse <= 1300; pulse += 5) {
+    esc.writeMicroseconds(pulse);
+    delay(50);
+  }
+
+  delay(2000);
+
+  Serial.println("Retour au ralenti...");
+  for (int pulse = 1300; pulse >= MIN_PULSE; pulse -= 5) {
+    esc.writeMicroseconds(pulse);
+    delay(50);
+  }
+
+  delay(5000); // Pause avant de recommencer
+}
