@@ -1,0 +1,36 @@
+#include <Servo.h>
+
+Servo esc;
+
+const int ESC_PIN = 9;       // Pin PWM reliée au signal de l'ESC
+const int MIN_PULSE = 1000;  // µs - moteur arrêté / armement
+const int MAX_TEST = 1300;   // µs - vitesse max pour ce test (prudence)
+
+void setup() {
+  Serial.begin(9600);
+
+  esc.attach(ESC_PIN, MIN_PULSE, 2000);
+
+  Serial.println("Armement de l'ESC...");
+  esc.writeMicroseconds(MIN_PULSE);
+  delay(3000);   // Laisser le temps à l'ESC de s'armer (bip(s) attendu(s))
+  Serial.println("ESC arme. Pret.");
+}
+
+void loop() {
+  Serial.println("Acceleration douce...");
+  for (int pulse = MIN_PULSE; pulse <= MAX_TEST; pulse += 5) {
+    esc.writeMicroseconds(pulse);
+    delay(50);
+  }
+
+  delay(2000); // Maintien à vitesse basse
+
+  Serial.println("Retour au ralenti...");
+  for (int pulse = MAX_TEST; pulse >= MIN_PULSE; pulse -= 5) {
+    esc.writeMicroseconds(pulse);
+    delay(50);
+  }
+
+  delay(5000); // Pause avant de recommencer
+}
