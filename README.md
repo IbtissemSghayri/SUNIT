@@ -18,9 +18,9 @@ PDB XT60 is replaced with a DC-DC Step-Down Buck Converter Power Supply Module 2
 
 
 
-
-
-
+#Software used
+Arduino.ide as the programming and development environment
+Fritzing and Cirkit designer
 
 
 #Reference 
