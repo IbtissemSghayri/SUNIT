@@ -3,6 +3,21 @@ SUNIT is an intelligent drone-based inspection system designed to improve the mo
 It is an esp32-based drone. It has a camera used to detect solar panals defects and help improve the efficiency of the panels by detecting overheat.
 The design of the drone integrates a camera, a gps and an mpu-6050.
 
+# How does it work ?
+The drone is equiped with a thermal camera that will scan the panals and connect in real time with a dashboard in order to analyse the panals data and detect defeated ones and the ones overheating, before the damage would happen.
+
+
+ # Components 
+1 Chassis for the drone
+4 Brushless Motor
+4 Electronic Speed Controller (ESC)
+1 MPU-6050
+1 PDB XT60
+1 LiPo Battery
+1 GPS NEO 6M
+1 ESP32
+1 ESP32-CAM [The idea was to use a thermal camera but we could not afford it so we used an ESP32-CAM for the prototype]
+
 # Componants Testing 
 The testing of the Brushless motors was done according to this scheme 
 <img width="928" height="470" alt="image" src="https://github.com/user-attachments/assets/686b6336-3cdc-4aa5-b3c8-d96f34e0446e" />
@@ -13,7 +28,6 @@ Wiring of the drone :
 <img width="974" height="622" alt="image" src="https://github.com/user-attachments/assets/bfe10ea9-ff20-4b28-aee3-7b842af1917a" />
 
 PDB XT60 is replaced with a DC-DC Step-Down Buck Converter Power Supply Module 24V 12V 9V to 5V 5A 25W in real-life as i did not find that component.
-
 
 
 
