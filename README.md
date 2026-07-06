@@ -18,12 +18,12 @@ PDB XT60 is replaced with a DC-DC Step-Down Buck Converter Power Supply Module 2
 
 
 
-#Software used
+# Software used
 Arduino.ide as the programming and development environment
 Fritzing and Cirkit designer
 
 
-#Reference 
+# Reference 
 https://docs.espressif.com/projects/espressif-esp-drone/en/latest/gettingstarted.html
 https://github.com/pratikPhadte/ESP32-Flight-controller-
 Article : Designing a Quadcopterfor Fire and Temperature Detection with an Infrared Camera and PIR Sensor Guruprasad Rathinakumar and Efstratios L. Ntantis *
