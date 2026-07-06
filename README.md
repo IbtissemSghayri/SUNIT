@@ -1,6 +1,4 @@
 # SUNIT ESP32-based drone equiped with a camera
-![Uploading image.png…]()
-
 
 SUNIT is an intelligent drone-based inspection system designed to improve the monitoring and maintenance of solar photovoltaic installations.
 It is an esp32-based drone. It has a camera used to detect solar panals defects and help improve the efficiency of the panels by detecting overheat.
