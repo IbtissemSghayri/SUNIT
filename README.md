@@ -17,6 +17,9 @@ PDB XT60 is replaced with a DC-DC Step-Down Buck Converter Power Supply Module 2
 
 
 
+# Setbacks and mistakes
+---> I thought that using 3 Lithium batteries 5V each will give me enough energy to rotate the brushless. That was not the case i figured that the Lipo batterie were not replaceable
+
 
 # Software used
 Arduino.ide as the programming and development environment
