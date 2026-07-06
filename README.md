@@ -2,8 +2,8 @@
 SUNIT is an intelligent drone-based inspection system designed to improve the monitoring and maintenance of solar photovoltaic installations.
 
 # Componants Testing 
-The testing of the Brushless motors was done according to this scheme
-<img width="1839" height="904" alt="Capture d&#39;écran 2026-07-02 095956" src="https://github.com/user-attachments/assets/62af30e7-ce5b-4994-8fbf-ac71c7a90089" />
+The testing of the Brushless motors was done according to this scheme 
+<img width="928" height="470" alt="image" src="https://github.com/user-attachments/assets/686b6336-3cdc-4aa5-b3c8-d96f34e0446e" />
 
 
 # Wiring 
