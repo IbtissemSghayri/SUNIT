@@ -18,7 +18,7 @@ PDB XT60 is replaced with a DC-DC Step-Down Buck Converter Power Supply Module 2
 
 
 # Setbacks and mistakes
----> I thought that using 3 Lithium batteries 5V each will give me enough energy to rotate the brushless. That was not the case i figured that the Lipo batterie were not replaceable
+---> I thought that using 3 Lithium batteries 5V connected in series with a bms to give me stable 12V will give me enough energy to rotate the brushless. That was not the case i figured that the Lipo batterie were not replaceable. Why ? becayse a 3S LiPo is built to deliver the burst current the A2212 motors need that the 3 separate cells wired in series (especially that mine are pulled from an old laptop) can not deliver enough current ! The answer is in current !
 
 
 # Software used
