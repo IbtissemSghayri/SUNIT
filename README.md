@@ -11,10 +11,10 @@ The drone is equiped with a thermal camera that will scan the panals and connect
  # Components of the drone 
 1 Chassis for the drone
 4 Brushless Motor
-4 Electronic Speed Controller (ESC)
+4 Electronic Speed Controller (ESC) 30A
 1 MPU-6050
 1 PDB XT60
-1 LiPo Battery
+1 LiPo Battery 2200mAh / 3s / 11.1 V
 1 GPS NEO 6M
 1 ESP32
 1 ESP32-CAM [The idea was to use a thermal camera but we could not afford it so we used an ESP32-CAM for the prototype]
