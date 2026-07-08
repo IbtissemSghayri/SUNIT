@@ -1,0 +1,1890 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SolarSight  — Farm Monitoring</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0A0F17;
+    --panel: #101826;
+    --panel-2: #0D1420;
+    --line: #1E2A3D;
+    --text: #E7ECF3;
+    --muted: #7C8AA0;
+    --amber: #F2A93B;   /* solar / energy */
+    --amber-dim: #6B5323;
+    --heat: #E4572E;    /* thermal / fault */
+    --heat-dim: #4A231A;
+    --ok: #3ECF8E;
+    --ok-dim: #1E4A38;
+    --warn: #F2C94C;
+    --radius: 10px;
+    --mono: 'JetBrains Mono', monospace;
+    --display: 'Space Grotesk', sans-serif;
+    --body: 'Inter', sans-serif;
+  }
+
+  *{ box-sizing: border-box; }
+
+  html, body{
+    margin:0; padding:0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--body);
+    height: 100%;
+  }
+
+  body{
+    background-image:
+      radial-gradient(circle at 15% 0%, rgba(242,169,59,0.06), transparent 40%),
+      radial-gradient(circle at 85% 10%, rgba(228,87,46,0.05), transparent 35%);
+  }
+
+  .app{
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px 24px 48px;
+  }
+
+  /* ---------- Top bar ---------- */
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding: 14px 20px;
+    background: linear-gradient(180deg, #121C2C, #0F1826);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    margin-bottom: 18px;
+  }
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:12px;
+  }
+  .brand-mark{
+    width: 34px; height: 34px;
+    border-radius: 8px;
+    background: conic-gradient(from 220deg, var(--amber), var(--heat), var(--amber));
+    display:flex; align-items:center; justify-content:center;
+    font-family: var(--display);
+    font-weight:700;
+    font-size: 15px;
+    color: #0A0F17;
+  }
+  .brand-text h1{
+    font-family: var(--display);
+    font-size: 18px;
+    font-weight: 600;
+    margin:0;
+    letter-spacing: 0.2px;
+  }
+  .brand-text span{
+    font-size: 11.5px;
+    color: var(--muted);
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+  }
+  .status-pill{
+    display:flex; align-items:center; gap:8px;
+    padding: 7px 14px;
+    background: rgba(62,207,142,0.08);
+    border: 1px solid var(--ok-dim);
+    border-radius: 999px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--ok);
+  }
+  .dot{
+    width:8px; height:8px; border-radius:50%;
+    background: var(--ok);
+    box-shadow: 0 0 0 0 rgba(62,207,142,0.6);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse{
+    0%{ box-shadow:0 0 0 0 rgba(62,207,142,0.55); }
+    70%{ box-shadow:0 0 0 8px rgba(62,207,142,0); }
+    100%{ box-shadow:0 0 0 0 rgba(62,207,142,0); }
+  }
+
+  /* ---------- Section labels ---------- */
+  .section-label{
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 10px 2px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .section-label::before{
+    content:'';
+    width: 3px; height: 12px;
+    background: var(--amber);
+    border-radius: 2px;
+    display:inline-block;
+  }
+
+  /* ---------- Stat cards ---------- */
+  .stats{
+    display:grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .card{
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    position: relative;
+    overflow:hidden;
+  }
+  .card::after{
+    content:'';
+    position:absolute; right:-20px; top:-20px;
+    width:80px; height:80px;
+    border-radius:50%;
+    background: var(--accent, rgba(242,169,59,0.08));
+    filter: blur(2px);
+  }
+  .card .label{
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .card .value{
+    font-family: var(--mono);
+    font-size: 28px;
+    font-weight: 700;
+  }
+  .card .sub{
+    font-size: 11.5px;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+  .card .sub.up{ color: var(--ok); }
+  .card .sub.down{ color: var(--heat); }
+  .card.c-panels{ --accent: rgba(242,169,59,0.10); }
+  .card.c-scanned{ --accent: rgba(62,207,142,0.10); }
+  .card.c-faults .value{ color: var(--heat); }
+  .card.c-faults{ --accent: rgba(228,87,46,0.12); }
+  .card.c-temp .value{ color: var(--warn); }
+
+  /* ---------- Grid layout ---------- */
+  .row{
+    display:grid;
+    grid-template-columns: 1.3fr 1fr;
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .panel{
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 16px 18px 18px;
+    display:flex;
+    flex-direction:column;
+  }
+  .panel-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom: 12px;
+  }
+  .panel-head h2{
+    font-family: var(--display);
+    font-size: 14.5px;
+    font-weight:600;
+    margin:0;
+  }
+  .panel-head .hint{
+    font-size: 11px;
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+
+  /* ---------- Farm map ---------- */
+  .map-wrap{
+    flex:1;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding: 16px;
+    min-height: 240px;
+  }
+  .legend{
+    display:flex; gap:16px; margin-top:12px;
+    font-size: 11.5px; color: var(--muted);
+  }
+  .legend span{ display:flex; align-items:center; gap:6px; }
+  .legend i{ width:8px; height:8px; border-radius:50%; display:inline-block; }
+
+  #farm-map rect{
+    cursor: pointer;
+    transition: opacity 0.12s ease, stroke 0.12s ease;
+  }
+  #farm-map rect:hover{
+    opacity: 1 !important;
+    stroke: #fff;
+    stroke-width: 1.5px;
+  }
+  #farm-map rect.selected{
+    stroke: var(--amber);
+    stroke-width: 2px;
+    opacity: 1 !important;
+  }
+
+  /* ---------- GPS Location panel ---------- */
+  .gps-map{
+    position: relative;
+    flex:1;
+    min-height: 240px;
+    border-radius: 8px;
+    overflow:hidden;
+    border: 1px solid var(--line);
+    background: var(--panel-2);
+    cursor: crosshair;
+  }
+  .gps-grid{ position:absolute; inset:0; width:100%; height:100%; }
+  .gps-grid rect.array-block{ transition: fill 0.12s ease, stroke 0.12s ease; }
+  .gps-grid rect.array-block.hovered{
+    fill: rgba(242,169,59,0.34);
+    stroke: var(--amber);
+    stroke-width: 1.5px;
+  }
+
+  .gps-marker{
+    position:absolute;
+    left: 48.5%;
+    top: 27%;
+    width: 12px; height:12px;
+    margin: -6px 0 0 -6px;
+    border-radius:50%;
+    background: var(--amber);
+    box-shadow: 0 0 14px 2px rgba(242,169,59,0.65);
+    z-index:2;
+  }
+  .gps-ring{
+    position:absolute;
+    left: 48.5%;
+    top: 27%;
+    width: 12px; height:12px;
+    margin: -6px 0 0 -6px;
+    border-radius:50%;
+    border: 1.5px solid var(--amber);
+    opacity:0;
+    animation: gps-pulse 2.6s ease-out infinite;
+  }
+  .gps-ring.delay{ animation-delay: 1.3s; }
+  @keyframes gps-pulse{
+    0%{ transform: scale(1); opacity: 0.65; }
+    100%{ transform: scale(9); opacity: 0; }
+  }
+
+  /* Hover crosshair + coordinate readout tooltip */
+  .gps-hover-dot{
+    position:absolute;
+    width:8px; height:8px;
+    margin:-4px 0 0 -4px;
+    border-radius:50%;
+    background: rgba(231,236,243,0.95);
+    border: 1.5px solid var(--bg);
+    box-shadow: 0 0 0 1px rgba(231,236,243,0.45);
+    pointer-events:none;
+    z-index:3;
+    display:none;
+  }
+  .gps-hover-dot.active{ display:block; }
+  .gps-hover-dot::before, .gps-hover-dot::after{
+    content:'';
+    position:absolute;
+    background: rgba(231,236,243,0.55);
+  }
+  .gps-hover-dot::before{ left:50%; top:-9px; width:1px; height:6px; transform:translateX(-50%); }
+  .gps-hover-dot::after{ left:50%; bottom:-9px; width:1px; height:6px; transform:translateX(-50%); }
+
+  .gps-tooltip{
+    position:absolute;
+    pointer-events:none;
+    z-index:4;
+    background: rgba(10,15,23,0.94);
+    border: 1px solid var(--amber-dim);
+    border-radius: 6px;
+    padding: 6px 10px;
+    white-space: nowrap;
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity 0.1s ease, transform 0.1s ease;
+  }
+  .gps-tooltip.active{ opacity:1; transform: translateY(0); }
+  .gps-tooltip-title{
+    font-family: var(--display);
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--amber);
+    margin-bottom: 2px;
+  }
+  .gps-tooltip-coord{
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text);
+  }
+
+  .gps-meta{
+    display:flex; justify-content:space-between;
+    align-items:center;
+    margin-top: 10px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--muted);
+  }
+  .gps-meta .gps-status{ color: var(--ok); }
+
+  /* ---------- Tables ---------- */
+  table{
+    width:100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+  }
+  thead th{
+    text-align:left;
+    font-size: 10.5px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--line);
+    font-weight: 500;
+  }
+  tbody td{
+    padding: 10px 10px;
+    border-bottom: 1px solid var(--line);
+    color: var(--text);
+  }
+  tbody tr:last-child td{ border-bottom:none; }
+  tbody tr:hover{ background: rgba(255,255,255,0.02); }
+  .mono{ font-family: var(--mono); }
+  .badge{
+    display:inline-block;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 10.5px;
+    font-family: var(--mono);
+    letter-spacing: 0.3px;
+  }
+  .badge.high{ background: rgba(228,87,46,0.15); color: var(--heat); border:1px solid var(--heat-dim); }
+  .badge.med{ background: rgba(242,201,76,0.12); color: var(--warn); border:1px solid #5a4a1c; }
+  .badge.low{ background: rgba(62,207,142,0.12); color: var(--ok); border:1px solid var(--ok-dim); }
+
+  /* ---------- Alerts ---------- */
+  .alerts{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:10px; }
+  .alerts li{
+    display:flex; gap:10px;
+    padding: 10px 12px;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    align-items:flex-start;
+  }
+  .alerts .a-dot{
+    width:8px; height:8px; border-radius:50%;
+    margin-top:5px; flex-shrink:0;
+  }
+  .alerts .a-body{ flex:1; }
+  .alerts .a-title{ font-size: 12.5px; font-weight:500; }
+  .alerts .a-time{ font-size: 11px; color: var(--muted); font-family: var(--mono); margin-top:2px; }
+
+  /* ---------- History ---------- */
+  .history-actions{ display:flex; gap:8px; }
+  .btn{
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--text);
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor:pointer;
+  }
+  .btn:hover{ border-color: var(--amber); color: var(--amber); }
+  .link-btn{
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--amber);
+    background: transparent;
+    border: 1px solid var(--amber-dim);
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor:pointer;
+  }
+  .link-btn:hover{ background: rgba(242,169,59,0.08); }
+
+  footer{
+    text-align:center;
+    color: var(--muted);
+    font-size: 11px;
+    margin-top: 10px;
+    font-family: var(--mono);
+  }
+
+  /* ---------- Panel detail modal ---------- */
+  .modal-overlay{
+    position: fixed;
+    inset: 0;
+    background: rgba(5,8,13,0.72);
+    backdrop-filter: blur(3px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 20px;
+  }
+  .modal-overlay.active{ display:flex; }
+  .panel-modal{
+    width: 560px;
+    max-width: 100%;
+    max-height: 88vh;
+    overflow-y: auto;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 20px 22px 22px;
+    position: relative;
+    box-shadow: 0 24px 70px rgba(0,0,0,0.55);
+  }
+  .panel-modal .close-btn{
+    position:absolute; top:14px; right:14px;
+    width: 28px; height: 28px;
+    display:flex; align-items:center; justify-content:center;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    color: var(--muted);
+    font-size: 15px;
+    cursor:pointer;
+  }
+  .panel-modal .close-btn:hover{ color: var(--text); border-color: var(--amber); }
+  .panel-modal .modal-head{ margin-bottom: 4px; padding-right: 30px; }
+  .panel-modal h3{
+    font-family: var(--display);
+    font-size: 17px;
+    margin: 0 0 4px;
+  }
+  .panel-modal .pm-sub{
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+  .cam-row{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 4px;
+  }
+  .cam-col{
+    display:flex;
+    flex-direction:column;
+  }
+  .cam-label{
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.7px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .cam-frame{
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    overflow: hidden;
+    background: #05070b;
+  }
+  .cam-caption{
+    display:flex; justify-content:space-between;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    margin: 6px 2px 0;
+  }
+  .cam-caption span{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  @media (max-width: 480px){
+    .cam-row{ grid-template-columns: 1fr; }
+  }
+  .detail-grid{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 12px;
+    margin-bottom: 14px;
+  }
+  .detail-item{
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 9px 11px;
+  }
+  .detail-item.span-2{ grid-column: 1 / -1; }
+  .detail-item .dl{
+    font-size: 10px;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .detail-item .dv{
+    font-family: var(--mono);
+    font-size: 13.5px;
+  }
+  .detail-item .dv.heat{ color: var(--heat); }
+  .detail-item .dv.warn{ color: var(--warn); }
+  .detail-item .dv.ok{ color: var(--ok); }
+  .modal-actions{ display:flex; gap:8px; margin-top: 18px; }
+  .btn.primary{
+    background: var(--amber);
+    border-color: var(--amber);
+    color: #0A0F17;
+    font-weight: 600;
+  }
+  .btn.primary:hover{ background:#ffbf5c; color:#0A0F17; border-color:#ffbf5c; }
+
+  /* ---------- Scheduler modal (Schedule Inspection / Flag for Review) ---------- */
+  .scheduler-modal{
+    width: 380px;
+    max-width: 100%;
+    max-height: 88vh;
+    overflow-y: auto;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 20px 22px 22px;
+    position: relative;
+    box-shadow: 0 24px 70px rgba(0,0,0,0.55);
+  }
+  .scheduler-modal .close-btn{
+    position:absolute; top:14px; right:14px;
+    width: 28px; height: 28px;
+    display:flex; align-items:center; justify-content:center;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    color: var(--muted);
+    font-size: 15px;
+    cursor:pointer;
+  }
+  .scheduler-modal .close-btn:hover{ color: var(--text); border-color: var(--amber); }
+  .scheduler-modal .modal-head{ margin-bottom: 6px; padding-right: 30px; }
+  .scheduler-modal h3{
+    font-family: var(--display);
+    font-size: 17px;
+    margin: 0 0 4px;
+  }
+  .scheduler-modal .pm-sub{
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .field-label{
+    font-size: 10.5px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 16px 0 8px;
+    display:block;
+  }
+
+  .sched-textarea{
+    width: 100%;
+    min-height: 54px;
+    resize: vertical;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: var(--body);
+    font-size: 12.5px;
+    padding: 9px 11px;
+  }
+  .sched-textarea:focus{ outline:none; border-color: var(--amber); }
+
+  /* Calendar */
+  .calendar{
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .cal-head{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom: 10px;
+  }
+  .cal-head .cal-title{
+    font-family: var(--mono);
+    font-size: 12.5px;
+    font-weight: 500;
+  }
+  .cal-nav-btn{
+    width: 24px; height: 24px;
+    display:flex; align-items:center; justify-content:center;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    color: var(--muted);
+    cursor:pointer;
+    font-size: 12px;
+  }
+  .cal-nav-btn:hover{ color: var(--amber); border-color: var(--amber-dim); }
+  .cal-weekdays{
+    display:grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    margin-bottom: 4px;
+  }
+  .cal-weekdays span{
+    text-align:center;
+    font-size: 10px;
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+  .cal-days{
+    display:grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 3px;
+  }
+  .cal-day{
+    aspect-ratio: 1;
+    display:flex; align-items:center; justify-content:center;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--text);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .cal-day:hover{ border-color: var(--amber-dim); }
+  .cal-day.other-month{ color: #3a4658; }
+  .cal-day.today{ border-color: var(--line); color: var(--amber); }
+  .cal-day.past{ color: #3a4658; cursor:not-allowed; }
+  .cal-day.selected{
+    background: var(--amber);
+    color: #0A0F17;
+    font-weight: 700;
+    border-color: var(--amber);
+  }
+
+  .field-row{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .sched-input, .sched-select{
+    width: 100%;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12.5px;
+    padding: 9px 10px;
+    color-scheme: dark;
+  }
+  .sched-input:focus, .sched-select:focus{ outline:none; border-color: var(--amber); }
+
+  .sched-summary{
+    margin-top: 16px;
+    padding: 10px 12px;
+    background: rgba(242,169,59,0.06);
+    border: 1px solid var(--amber-dim);
+    border-radius: 8px;
+    font-size: 11.5px;
+    color: var(--amber);
+    font-family: var(--mono);
+    line-height: 1.5;
+  }
+
+  /* Toast notifications */
+  .toast-stack{
+    position: fixed;
+    bottom: 22px;
+    right: 22px;
+    display:flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 200;
+  }
+  .toast{
+    background: var(--panel);
+    border: 1px solid var(--ok-dim);
+    border-left: 3px solid var(--ok);
+    border-radius: 8px;
+    padding: 12px 16px;
+    max-width: 300px;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.4);
+    animation: toast-in 0.25s ease;
+  }
+  .toast .toast-title{ font-weight: 600; margin-bottom: 3px; font-family: var(--display); font-size: 13px; }
+  .toast .toast-body{ color: var(--muted); font-family: var(--mono); font-size: 11px; line-height:1.5; }
+  @keyframes toast-in{
+    from{ transform: translateX(20px); opacity:0; }
+    to{ transform: translateX(0); opacity:1; }
+  }
+  .toast.fade-out{ animation: toast-out 0.25s ease forwards; }
+  @keyframes toast-out{
+    from{ opacity:1; }
+    to{ opacity:0; transform: translateX(20px); }
+  }
+
+  /* ---------- Login screen ---------- */
+  .login-screen{
+    position: fixed;
+    inset: 0;
+    z-index: 300;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 20% 15%, rgba(242,169,59,0.10), transparent 45%),
+      radial-gradient(circle at 80% 85%, rgba(228,87,46,0.08), transparent 40%);
+    padding: 20px;
+  }
+  .login-screen.hidden{ display:none; }
+  .login-card{
+    width: 380px;
+    max-width: 100%;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 32px 30px 28px;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+  }
+  .login-brand{
+    display:flex;
+    flex-direction: column;
+    align-items:center;
+    gap:10px;
+    margin-bottom: 26px;
+    text-align:center;
+  }
+  .login-brand .brand-mark{ width:44px; height:44px; font-size:19px; }
+  .login-brand h1{ font-family: var(--display); font-size:19px; margin:0; }
+  .login-brand span{ font-size:11.5px; color:var(--muted); letter-spacing:0.4px; text-transform:uppercase; }
+
+  .login-field{ margin-bottom: 14px; }
+  .login-field label{
+    display:block;
+    font-size: 10.5px;
+    letter-spacing:0.5px;
+    text-transform:uppercase;
+    color: var(--muted);
+    margin-bottom: 7px;
+  }
+  .login-input{
+    width:100%;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 10px 12px;
+  }
+  .login-input:focus{ outline:none; border-color: var(--amber); }
+  .login-input.error{ border-color: var(--heat); }
+
+  .login-error{
+    display:none;
+    align-items:center;
+    gap:6px;
+    color: var(--heat);
+    font-size: 11.5px;
+    font-family: var(--mono);
+    margin: -4px 0 14px;
+  }
+  .login-error.active{ display:flex; }
+
+  .login-submit{
+    width:100%;
+    padding: 11px;
+    border-radius: 8px;
+    border:1px solid var(--amber);
+    background: var(--amber);
+    color:#0A0F17;
+    font-family: var(--display);
+    font-weight:600;
+    font-size: 13.5px;
+    cursor:pointer;
+    margin-top: 4px;
+  }
+  .login-submit:hover{ background:#ffbf5c; border-color:#ffbf5c; }
+
+  .login-hint{
+    margin-top: 18px;
+    padding: 10px 12px;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--muted);
+    line-height:1.6;
+    text-align:center;
+  }
+  .login-hint b{ color: var(--text); }
+
+  .shake{ animation: shake 0.32s ease; }
+  @keyframes shake{
+    0%,100%{ transform: translateX(0); }
+    25%{ transform: translateX(-6px); }
+    75%{ transform: translateX(6px); }
+  }
+
+  /* Topbar user chip + logout */
+  .topbar-right{ display:flex; align-items:center; gap:12px; }
+  .user-chip{
+    display:flex; align-items:center; gap:8px;
+    padding: 5px 8px 5px 6px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    font-size: 12px;
+  }
+  .user-chip .avatar{
+    width:22px; height:22px;
+    border-radius:50%;
+    background: conic-gradient(from 220deg, var(--amber), var(--heat), var(--amber));
+    display:flex; align-items:center; justify-content:center;
+    font-family: var(--display);
+    font-size: 10.5px;
+    font-weight:700;
+    color:#0A0F17;
+  }
+  .logout-btn{
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    background: transparent;
+    border: none;
+    cursor:pointer;
+    padding: 2px 4px;
+  }
+  .logout-btn:hover{ color: var(--heat); }
+
+  @media (max-width: 980px){
+    .stats{ grid-template-columns: repeat(2,1fr); }
+    .row{ grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Login screen -->
+<div class="login-screen" id="login-screen">
+  <div class="login-card">
+    <div class="login-brand">
+      <div class="brand-mark">S</div>
+      <h1>SolarSight </h1>
+      <span>Farm Monitoring Console</span>
+    </div>
+
+    <form id="login-form" autocomplete="off">
+      <div class="login-field">
+        <label for="login-username">Username</label>
+        <input type="text" class="login-input" id="login-username" autocomplete="username" placeholder="Enter username">
+      </div>
+      <div class="login-field">
+        <label for="login-password">Password</label>
+        <input type="password" class="login-input" id="login-password" autocomplete="current-password" placeholder="Enter password">
+      </div>
+      <div class="login-error" id="login-error">⚠ Incorrect username or password.</div>
+      <button type="submit" class="login-submit">Sign In</button>
+    </form>
+
+    <div class="login-hint">
+      Demo access — username <b>demo</b>, password <b>solarsight</b>
+    </div>
+  </div>
+</div>
+
+<div class="app" id="app-root">
+
+  <!-- Top bar -->
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-mark">S</div>
+      <div class="brand-text">
+        <h1>SolarSight </h1>
+        <span>Farm Monitoring Console</span>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="status-pill"><span class="dot"></span><span id="status-text">SYSTEM ONLINE</span></div>
+      <div class="user-chip">
+        <span class="avatar" id="user-avatar">D</span>
+        <span id="user-name">demo</span>
+        <button class="logout-btn" id="logout-btn" title="Log out">Log out</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stat cards -->
+  <div class="section-label">Overview</div>
+  <div class="stats">
+    <div class="card c-panels">
+      <div class="label">Total Panels</div>
+      <div class="value" id="stat-total">1200</div>
+      <div class="sub">Across 4 arrays</div>
+    </div>
+    <div class="card c-scanned">
+      <div class="label">Panels Scanned Today</div>
+      <div class="value" id="stat-scanned">821</div>
+      <div class="sub up">↑ live scan in progress</div>
+    </div>
+    <div class="card c-faults">
+      <div class="label">Faults Detected</div>
+      <div class="value" id="stat-faults">17</div>
+      <div class="sub down">↑ 3 since last hour</div>
+    </div>
+    <div class="card c-temp">
+      <div class="label">Avg Panel Temperature</div>
+      <div class="value" id="stat-temp">41.6°C</div>
+      <div class="sub">Nominal range: 35–45°C</div>
+    </div>
+  </div>
+
+  <!-- Map + GPS -->
+  <div class="row">
+    <div class="panel">
+      <div class="panel-head">
+        <h2>Solar Farm Map</h2>
+        <span class="hint">4 arrays · 1200 panels · click a cell</span>
+      </div>
+      <div class="map-wrap">
+        <svg id="farm-map" width="100%" height="240" viewBox="0 0 520 240"></svg>
+      </div>
+      <div class="legend">
+        <span><i style="background:var(--ok)"></i>Normal</span>
+        <span><i style="background:var(--warn)"></i>Warning</span>
+        <span><i style="background:var(--heat)"></i>Fault</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h2>GPS Location</h2>
+        <span class="hint">Array Site 1 · Kairouan, TN</span>
+      </div>
+      <div class="gps-map" id="gps-map">
+        <svg class="gps-grid" viewBox="0 0 400 240" xmlns="http://www.w3.org/2000/svg">
+          <g stroke="rgba(124,138,160,0.14)" stroke-width="1">
+            <line x1="0" y1="40" x2="400" y2="40"/>
+            <line x1="0" y1="80" x2="400" y2="80"/>
+            <line x1="0" y1="120" x2="400" y2="120"/>
+            <line x1="0" y1="160" x2="400" y2="160"/>
+            <line x1="0" y1="200" x2="400" y2="200"/>
+            <line x1="50" y1="0" x2="50" y2="240"/>
+            <line x1="100" y1="0" x2="100" y2="240"/>
+            <line x1="150" y1="0" x2="150" y2="240"/>
+            <line x1="200" y1="0" x2="200" y2="240"/>
+            <line x1="250" y1="0" x2="250" y2="240"/>
+            <line x1="300" y1="0" x2="300" y2="240"/>
+            <line x1="350" y1="0" x2="350" y2="240"/>
+          </g>
+          <path d="M0,192 L400,150" stroke="rgba(231,236,243,0.18)" stroke-width="6" fill="none" stroke-linecap="round"/>
+          <g fill="rgba(242,169,59,0.16)" stroke="rgba(242,169,59,0.35)" stroke-width="1">
+            <rect class="array-block" data-name="Array A" x="40" y="40" width="90" height="50" rx="3"/>
+            <rect class="array-block" data-name="Array B" x="150" y="40" width="90" height="50" rx="3"/>
+            <rect class="array-block" data-name="Array C" x="40" y="120" width="90" height="50" rx="3"/>
+            <rect class="array-block" data-name="Array D" x="150" y="120" width="90" height="50" rx="3"/>
+          </g>
+        </svg>
+        <div class="gps-ring"></div>
+        <div class="gps-ring delay"></div>
+        <div class="gps-marker"></div>
+        <div class="gps-hover-dot" id="gps-hover-dot"></div>
+        <div class="gps-tooltip" id="gps-tooltip"></div>
+      </div>
+      <div class="gps-meta">
+        <span id="gps-coords">34.3917° N, 119.0724° W</span>
+        <span class="gps-status" id="gps-status">±1.4 m · GPS LOCK</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fault table + Alerts -->
+  <div class="row">
+    <div class="panel">
+      <div class="panel-head">
+        <h2>Fault Detection</h2>
+        <span class="hint">Sorted by severity</span>
+      </div>
+      <table>
+        <thead>
+          <tr><th>Panel ID</th><th>Array</th><th>Fault Type</th><th>Severity</th><th>Detected</th></tr>
+        </thead>
+        <tbody id="fault-table-body"></tbody>
+      </table>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h2>Recent Alerts</h2>
+        <span class="hint">Last 24h</span>
+      </div>
+      <ul class="alerts" id="alerts-list"></ul>
+    </div>
+  </div>
+
+  <!-- History -->
+  <div class="panel">
+    <div class="panel-head">
+      <h2>Inspection History &amp; Reports</h2>
+      <div class="history-actions">
+        <button class="btn">Export CSV</button>
+        <button class="btn">New Inspection</button>
+      </div>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Date</th><th>Array</th><th>Panels Scanned</th><th>Faults Found</th><th>Inspector</th><th>Report</th></tr>
+      </thead>
+      <tbody id="history-table-body"></tbody>
+    </table>
+  </div>
+
+  <footer>SolarSight  · Data refreshes every few seconds in this demo</footer>
+</div>
+
+<!-- Panel detail modal -->
+<div class="modal-overlay" id="panel-modal-overlay">
+  <div class="panel-modal">
+    <button class="close-btn" id="modal-close-btn">✕</button>
+    <div class="modal-head">
+      <h3 id="pm-title">Panel —</h3>
+      <div class="pm-sub" id="pm-sub">—</div>
+    </div>
+
+    <div class="cam-row">
+      <div class="cam-col">
+        <div class="cam-label">Visual</div>
+        <div class="cam-frame" id="cam-frame-visual"></div>
+        <div class="cam-caption">
+          <span id="pm-cam-sensor-visual">SENSOR: RGB-4K</span>
+          <span id="pm-cam-time-visual">JUST NOW</span>
+        </div>
+      </div>
+      <div class="cam-col">
+        <div class="cam-label">Thermal</div>
+        <div class="cam-frame" id="cam-frame-thermal"></div>
+        <div class="cam-caption">
+          <span id="pm-cam-sensor-thermal">SENSOR: FLIR-T4</span>
+          <span id="pm-cam-time-thermal">JUST NOW</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="detail-grid">
+      <div class="detail-item">
+        <div class="dl">Array / Location</div>
+        <div class="dv" id="pm-location">—</div>
+      </div>
+      <div class="detail-item">
+        <div class="dl">Grid Position</div>
+        <div class="dv" id="pm-position">—</div>
+      </div>
+      <div class="detail-item">
+        <div class="dl">Status</div>
+        <div class="dv" id="pm-status">—</div>
+      </div>
+      <div class="detail-item">
+        <div class="dl">Temperature</div>
+        <div class="dv" id="pm-temp">—</div>
+      </div>
+      <div class="detail-item span-2">
+        <div class="dl">Crack / Defect</div>
+        <div class="dv" id="pm-crack">—</div>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn" id="pm-schedule-btn">Schedule Inspection</button>
+      <button class="btn" id="pm-flag-btn">Flag for Review</button>
+    </div>
+  </div>
+</div>
+
+<!-- Scheduler modal: used for both "Schedule Inspection" and "Flag for Review" reminder -->
+<div class="modal-overlay" id="scheduler-modal-overlay">
+  <div class="scheduler-modal">
+    <button class="close-btn" id="scheduler-close-btn">✕</button>
+    <div class="modal-head">
+      <h3 id="sched-title">Schedule Inspection</h3>
+      <div class="pm-sub" id="sched-sub">Panel —</div>
+    </div>
+
+    <div id="sched-reason-wrap" style="display:none;">
+      <label class="field-label" style="margin-top:14px;">Reason for review</label>
+      <textarea class="sched-textarea" id="sched-reason" placeholder="e.g. suspected micro-crack, needs engineer sign-off"></textarea>
+    </div>
+
+    <label class="field-label" id="sched-cal-label">Date</label>
+    <div class="calendar" id="sched-calendar">
+      <div class="cal-head">
+        <button class="cal-nav-btn" id="cal-prev" type="button">‹</button>
+        <span class="cal-title" id="cal-month-label">—</span>
+        <button class="cal-nav-btn" id="cal-next" type="button">›</button>
+      </div>
+      <div class="cal-weekdays">
+        <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+      </div>
+      <div class="cal-days" id="cal-days"></div>
+    </div>
+
+    <label class="field-label">Time &amp; repeat</label>
+    <div class="field-row">
+      <input type="time" class="sched-input" id="sched-time" value="09:00">
+      <select class="sched-select" id="sched-repeat">
+        <option value="none">Does not repeat</option>
+        <option value="daily">Daily</option>
+        <option value="weekly">Weekly</option>
+        <option value="biweekly">Every 2 weeks</option>
+        <option value="monthly">Monthly</option>
+      </select>
+    </div>
+
+    <div class="sched-summary" id="sched-summary">Pick a date to see the schedule summary.</div>
+
+    <div class="modal-actions">
+      <button class="btn" id="sched-cancel-btn">Cancel</button>
+      <button class="btn primary" id="sched-confirm-btn">Confirm Schedule</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast notifications -->
+<div class="toast-stack" id="toast-stack"></div>
+
+<script>
+/* ---------- Login gate ---------- */
+const DEMO_USER = 'demo';
+const DEMO_PASS = 'solarsight';
+
+const loginScreen = document.getElementById('login-screen');
+const appRoot = document.getElementById('app-root');
+const loginForm = document.getElementById('login-form');
+const loginUsernameInput = document.getElementById('login-username');
+const loginPasswordInput = document.getElementById('login-password');
+const loginErrorEl = document.getElementById('login-error');
+const loginCardEl = document.querySelector('.login-card');
+const userNameEl = document.getElementById('user-name');
+const userAvatarEl = document.getElementById('user-avatar');
+const logoutBtn = document.getElementById('logout-btn');
+
+appRoot.style.display = 'none';
+loginUsernameInput.focus();
+
+loginForm.addEventListener('submit', (e)=>{
+  e.preventDefault();
+  const u = loginUsernameInput.value.trim();
+  const p = loginPasswordInput.value;
+
+  if(u.toLowerCase() === DEMO_USER && p === DEMO_PASS){
+    loginErrorEl.classList.remove('active');
+    loginUsernameInput.classList.remove('error');
+    loginPasswordInput.classList.remove('error');
+    loginScreen.classList.add('hidden');
+    appRoot.style.display = 'block';
+    userNameEl.textContent = u;
+    userAvatarEl.textContent = u.charAt(0).toUpperCase();
+    loginPasswordInput.value = '';
+  } else {
+    loginErrorEl.classList.add('active');
+    loginUsernameInput.classList.add('error');
+    loginPasswordInput.classList.add('error');
+    loginCardEl.classList.remove('shake');
+    void loginCardEl.offsetWidth; // restart the shake animation
+    loginCardEl.classList.add('shake');
+    loginPasswordInput.value = '';
+    loginPasswordInput.focus();
+  }
+});
+
+logoutBtn.addEventListener('click', ()=>{
+  appRoot.style.display = 'none';
+  loginScreen.classList.remove('hidden');
+  loginUsernameInput.value = '';
+  loginPasswordInput.value = '';
+  loginErrorEl.classList.remove('active');
+  loginUsernameInput.classList.remove('error');
+  loginPasswordInput.classList.remove('error');
+  loginUsernameInput.focus();
+});
+
+/* ---------- Sample data ---------- */
+const faultTypes = ["Hotspot", "Micro-crack", "Delamination", "Diode Failure", "Soiling", "Shading"];
+const arrays = ["Array A", "Array B", "Array C", "Array D"];
+const severities = ["high", "med", "low"];
+
+function randomFrom(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+function pad(n){ return n.toString().padStart(2,'0'); }
+
+function timeAgo(mins){
+  if(mins < 60) return mins + " min ago";
+  return Math.floor(mins/60) + "h " + (mins%60) + "m ago";
+}
+
+/* ---------- Farm map (SVG grid of panels) ---------- */
+const svg = document.getElementById('farm-map');
+const cols = 26, rows = 8, cellW = 18, cellH = 22, gap = 2;
+const svgNS = "http://www.w3.org/2000/svg";
+const statusColors = { normal: 'var(--ok)', warning: 'var(--warn)', fault: 'var(--heat)' };
+
+// crack location options, described relative to the panel face
+const crackSpots = [
+  "top-left corner", "top edge", "top-right corner",
+  "left edge", "center", "right edge",
+  "bottom-left corner", "bottom edge", "bottom-right corner",
+  "diagonal, corner to corner"
+];
+
+const panelDataStore = {}; // key: "r-c" -> panel data object
+let selectedRect = null;
+let currentPanelData = null; // panel currently shown in the detail modal
+
+for(let r=0;r<rows;r++){
+  for(let c=0;c<cols;c++){
+    const rand = Math.random();
+    let status = 'normal';
+    if(rand > 0.97) status = 'fault';
+    else if(rand > 0.9) status = 'warning';
+
+    // Determine temperature based on status
+    let temp;
+    if(status === 'fault') temp = (60 + Math.random()*18).toFixed(1);
+    else if(status === 'warning') temp = (46 + Math.random()*9).toFixed(1);
+    else temp = (35 + Math.random()*10).toFixed(1);
+
+    // Determine crack: faults often cracked, warnings sometimes, normals rarely
+    let cracked = false;
+    if(status === 'fault') cracked = Math.random() > 0.35;
+    else if(status === 'warning') cracked = Math.random() > 0.8;
+    else cracked = Math.random() > 0.985;
+    const crackLocation = cracked ? randomFrom(crackSpots) : null;
+
+    // Assign array by column quadrant (4 arrays across the grid)
+    const arrayIndex = Math.floor(c / (cols/4));
+    const arrayName = arrays[Math.min(arrayIndex, arrays.length-1)];
+    const panelId = `${arrayName[arrayName.length-1]}-${100 + r*cols + c}`;
+
+    const data = {
+      id: panelId,
+      row: r, col: c,
+      array: arrayName,
+      status: status,
+      temp: temp,
+      cracked: cracked,
+      crackLocation: crackLocation
+    };
+    panelDataStore[`${r}-${c}`] = data;
+
+    const rect = document.createElementNS(svgNS, 'rect');
+    rect.setAttribute('x', c*(cellW+gap)+6);
+    rect.setAttribute('y', r*(cellH+gap)+6);
+    rect.setAttribute('width', cellW);
+    rect.setAttribute('height', cellH);
+    rect.setAttribute('rx', 2);
+    rect.setAttribute('fill', statusColors[status]);
+    rect.setAttribute('opacity', status==='normal' ? 0.55 : 0.95);
+    rect.dataset.key = `${r}-${c}`;
+    rect.addEventListener('click', () => openPanelModal(data, rect));
+    svg.appendChild(rect);
+  }
+}
+
+/* ---------- Panel detail modal ---------- */
+const modalOverlay = document.getElementById('panel-modal-overlay');
+// Cache the STABLE containers (.cam-frame) rather than an <svg> element itself.
+// We update these with innerHTML on every click, which always targets the live
+// DOM node — unlike outerHTML replacement, which swaps the element for a new
+// node and leaves any cached reference pointing at a detached one.
+const camFrameVisual = document.getElementById('cam-frame-visual');
+const camFrameThermal = document.getElementById('cam-frame-thermal');
+
+function statusBadgeMarkup(status){
+  if(status === 'fault') return '<span class="badge high">FAULT</span>';
+  if(status === 'warning') return '<span class="badge med">WARNING</span>';
+  return '<span class="badge low">NORMAL</span>';
+}
+
+// Shared grid geometry so the visual and thermal captures line up cell-for-cell.
+const CAM_W = 400, CAM_H = 180;
+const CAM_PAD_X = 40, CAM_PAD_Y = 20;
+const CAM_GRID_COLS = 6, CAM_GRID_ROWS = 4;
+const CAM_CELL_W = (CAM_W - CAM_PAD_X*2) / CAM_GRID_COLS;
+const CAM_CELL_H = (CAM_H - CAM_PAD_Y*2) / CAM_GRID_ROWS;
+
+// Deterministic (seeded by panel id) crack path, so the same "physical" crack
+// renders in the same spot on both the visual photo and the thermal capture.
+function getCrackPoints(data){
+  const padX = CAM_PAD_X, padY = CAM_PAD_Y, gw = CAM_CELL_W, gh = CAM_CELL_H, w = CAM_W, h = CAM_H;
+  const map = {
+    "top-left corner": [padX+5, padY+5, padX+gw*1.5, padY+gh*1.2],
+    "top edge": [padX+gw*1.5, padY+3, padX+gw*4.5, padY+gh*0.8],
+    "top-right corner": [w-padX-5, padY+5, w-padX-gw*1.5, padY+gh*1.2],
+    "left edge": [padX+3, padY+gh*1.2, padX+gw*0.8, h-padY-gh*1.2],
+    "center": [padX+gw*2.2, padY+gh*1.3, padX+gw*3.8, h-padY-gh*1.3],
+    "right edge": [w-padX-3, padY+gh*1.2, w-padX-gw*0.8, h-padY-gh*1.2],
+    "bottom-left corner": [padX+5, h-padY-5, padX+gw*1.5, h-padY-gh*1.2],
+    "bottom edge": [padX+gw*1.5, h-padY-3, padX+gw*4.5, h-padY-gh*0.8],
+    "bottom-right corner": [w-padX-5, h-padY-5, w-padX-gw*1.5, h-padY-gh*1.2],
+    "diagonal, corner to corner": [padX+5, padY+5, w-padX-5, h-padY-5]
+  };
+  const [x1,y1,x2,y2] = map[data.crackLocation] || map["center"];
+  // Seed off the panel id so the jitter is stable across re-renders/images
+  // instead of re-randomizing (and de-syncing) on every call.
+  let seed = 0;
+  for(const ch of data.id) seed += ch.charCodeAt(0);
+  const midx = (x1+x2)/2 + ((seed % 21) - 10);
+  const midy = (y1+y2)/2 + (((seed*7) % 21) - 10);
+  return { x1, y1, midx, midy, x2, y2 };
+}
+
+function buildCameraThumbnail(data){
+  // Generates a synthetic thermal capture for the selected panel
+  const w = CAM_W, h = CAM_H, padX = CAM_PAD_X, padY = CAM_PAD_Y, gw = CAM_CELL_W, gh = CAM_CELL_H;
+  const heatColor = data.status === 'fault' ? '#e4572e' : data.status === 'warning' ? '#f2c94c' : '#3ecf8e';
+
+  let svgStr = `<svg width="100%" height="150" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">`;
+  svgStr += `<defs>
+    <radialGradient id="camGrad" cx="50%" cy="60%" r="75%">
+      <stop offset="0%" stop-color="${data.status==='fault' ? '#ffe28a' : data.status==='warning' ? '#fff3c2' : '#bdeedc'}" />
+      <stop offset="35%" stop-color="${heatColor}" />
+      <stop offset="75%" stop-color="#2a1a14" />
+      <stop offset="100%" stop-color="#0a0f17" />
+    </radialGradient>
+  </defs>`;
+  svgStr += `<rect width="${w}" height="${h}" fill="url(#camGrad)" />`;
+
+  // panel cell grid overlay (simulate solar cell rows/cols on the physical panel)
+  svgStr += `<g stroke="rgba(255,255,255,0.25)" stroke-width="1" fill="none">`;
+  svgStr += `<rect x="${padX}" y="${padY}" width="${w-padX*2}" height="${h-padY*2}" stroke="rgba(255,255,255,0.4)" />`;
+  for(let i=1;i<CAM_GRID_COLS;i++){
+    const x = padX + i*gw;
+    svgStr += `<line x1="${x}" y1="${padY}" x2="${x}" y2="${h-padY}" />`;
+  }
+  for(let i=1;i<CAM_GRID_ROWS;i++){
+    const y = padY + i*gh;
+    svgStr += `<line x1="${padX}" y1="${y}" x2="${w-padX}" y2="${y}" />`;
+  }
+  svgStr += `</g>`;
+
+  // crack overlay
+  if(data.cracked){
+    const cp = getCrackPoints(data);
+    svgStr += `<polyline points="${cp.x1},${cp.y1} ${cp.midx},${cp.midy} ${cp.x2},${cp.y2}" stroke="#0a0f17" stroke-width="2.5" fill="none" opacity="0.9" stroke-linecap="round" />`;
+    svgStr += `<polyline points="${cp.x1},${cp.y1} ${cp.midx},${cp.midy} ${cp.x2},${cp.y2}" stroke="#ffffff" stroke-width="1" fill="none" opacity="0.7" stroke-linecap="round" />`;
+  }
+
+  // hotspot marker for fault panels
+  if(data.status === 'fault'){
+    svgStr += `<circle cx="${w*0.55}" cy="${h*0.55}" r="16" fill="none" stroke="#fff" stroke-width="2" opacity="0.85" />`;
+    svgStr += `<text x="${w*0.55}" y="${h*0.55 - 22}" fill="#fff" font-size="12" font-family="monospace" text-anchor="middle">${data.temp}°C</text>`;
+  }
+
+  svgStr += `<text x="10" y="16" fill="rgba(255,255,255,0.6)" font-size="10" font-family="monospace">${data.id}</text>`;
+  svgStr += `</svg>`;
+  return svgStr;
+}
+
+function buildVisualThumbnail(data){
+  // Generates a synthetic "real-life" RGB capture of the same panel — same
+  // grid geometry and crack path as the thermal capture, so they read as two
+  // views of the same physical panel rather than two unrelated images.
+  const w = CAM_W, h = CAM_H, padX = CAM_PAD_X, padY = CAM_PAD_Y, gw = CAM_CELL_W, gh = CAM_CELL_H;
+
+  let svgStr = `<svg width="100%" height="150" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">`;
+  svgStr += `<defs>
+    <linearGradient id="panelGlass" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1c3a5e" />
+      <stop offset="45%" stop-color="#0f2138" />
+      <stop offset="100%" stop-color="#070f1a" />
+    </linearGradient>
+    <linearGradient id="sheen" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.22)" />
+      <stop offset="100%" stop-color="rgba(255,255,255,0)" />
+    </linearGradient>
+  </defs>`;
+  svgStr += `<rect width="${w}" height="${h}" fill="#05070b" />`;
+  svgStr += `<rect x="${padX}" y="${padY}" width="${w-padX*2}" height="${h-padY*2}" fill="url(#panelGlass)" stroke="rgba(180,200,220,0.35)" />`;
+
+  // silicon cell grid (silvery lines, like real cell busbars)
+  svgStr += `<g stroke="rgba(150,180,210,0.35)" stroke-width="1">`;
+  for(let i=1;i<CAM_GRID_COLS;i++){
+    const x = padX + i*gw;
+    svgStr += `<line x1="${x}" y1="${padY}" x2="${x}" y2="${h-padY}" />`;
+  }
+  for(let i=1;i<CAM_GRID_ROWS;i++){
+    const y = padY + i*gh;
+    svgStr += `<line x1="${padX}" y1="${y}" x2="${w-padX}" y2="${y}" />`;
+  }
+  svgStr += `</g>`;
+
+  // soft sunlight sheen across the glass
+  svgStr += `<polygon points="${padX},${padY} ${padX+(w-padX*2)*0.5},${padY} ${padX+(w-padX*2)*0.18},${h-padY} ${padX},${h-padY}" fill="url(#sheen)" opacity="0.55" />`;
+
+  // dust/soiling film for warning-status panels
+  if(data.status === 'warning' && !data.cracked){
+    svgStr += `<rect x="${padX}" y="${padY}" width="${w-padX*2}" height="${(h-padY*2)*0.4}" fill="rgba(120,100,70,0.22)" />`;
+  }
+
+  // faint scorch discoloration echoing the thermal hotspot on fault panels
+  if(data.status === 'fault'){
+    svgStr += `<ellipse cx="${w*0.55}" cy="${h*0.55}" rx="26" ry="18" fill="rgba(40,25,15,0.45)" />`;
+  }
+
+  // crack overlay — identical geometry to the thermal capture
+  if(data.cracked){
+    const cp = getCrackPoints(data);
+    svgStr += `<polyline points="${cp.x1},${cp.y1} ${cp.midx},${cp.midy} ${cp.x2},${cp.y2}" stroke="#04070b" stroke-width="2" fill="none" opacity="0.9" stroke-linecap="round" />`;
+    svgStr += `<polyline points="${cp.x1},${cp.y1} ${cp.midx},${cp.midy} ${cp.x2},${cp.y2}" stroke="#dfe9f5" stroke-width="0.8" fill="none" opacity="0.55" stroke-linecap="round" />`;
+  }
+
+  svgStr += `<text x="10" y="16" fill="rgba(255,255,255,0.55)" font-size="10" font-family="monospace">${data.id}</text>`;
+  svgStr += `</svg>`;
+  return svgStr;
+}
+
+function openPanelModal(data, rectEl){
+  currentPanelData = data;
+  if(selectedRect) selectedRect.classList.remove('selected');
+  if(rectEl){ rectEl.classList.add('selected'); selectedRect = rectEl; }
+
+  document.getElementById('pm-title').textContent = `Panel ${data.id}`;
+  document.getElementById('pm-sub').textContent = `${data.array} · captured by drone inspection unit`;
+  document.getElementById('pm-location').textContent = data.array;
+  document.getElementById('pm-position').textContent = `Row ${data.row + 1}, Col ${data.col + 1}`;
+
+  const statusEl = document.getElementById('pm-status');
+  statusEl.innerHTML = statusBadgeMarkup(data.status);
+
+  const tempEl = document.getElementById('pm-temp');
+  tempEl.textContent = `${data.temp}°C`;
+  tempEl.className = 'dv ' + (data.status === 'fault' ? 'heat' : data.status === 'warning' ? 'warn' : 'ok');
+
+  const crackEl = document.getElementById('pm-crack');
+  if(data.cracked){
+    crackEl.textContent = `Yes — ${data.crackLocation}`;
+    crackEl.className = 'dv heat';
+  } else {
+    crackEl.textContent = 'No visible cracking';
+    crackEl.className = 'dv ok';
+  }
+
+  // Replace the contents of the stable .cam-frame containers (not the <svg>
+  // itself) so innerHTML always targets a live DOM node, updating every time.
+  camFrameVisual.innerHTML = buildVisualThumbnail(data);
+  camFrameThermal.innerHTML = buildCameraThumbnail(data);
+
+  document.getElementById('pm-cam-time-visual').textContent = 'JUST NOW';
+  document.getElementById('pm-cam-time-thermal').textContent = 'JUST NOW';
+
+  modalOverlay.classList.add('active');
+}
+
+function closePanelModal(){
+  modalOverlay.classList.remove('active');
+  if(selectedRect){ selectedRect.classList.remove('selected'); selectedRect = null; }
+}
+
+document.getElementById('modal-close-btn').addEventListener('click', closePanelModal);
+modalOverlay.addEventListener('click', (e)=>{
+  if(e.target === modalOverlay) closePanelModal();
+});
+document.addEventListener('keydown', (e)=>{
+  if(e.key === 'Escape'){
+    if(schedulerOverlay.classList.contains('active')) closeSchedulerModal();
+    else closePanelModal();
+  }
+});
+
+/* ---------- Scheduler modal (calendar + time + repeat) ---------- */
+const schedulerOverlay = document.getElementById('scheduler-modal-overlay');
+const schedTitle = document.getElementById('sched-title');
+const schedSub = document.getElementById('sched-sub');
+const schedReasonWrap = document.getElementById('sched-reason-wrap');
+const schedReason = document.getElementById('sched-reason');
+const schedCalLabel = document.getElementById('sched-cal-label');
+const calMonthLabel = document.getElementById('cal-month-label');
+const calDaysEl = document.getElementById('cal-days');
+const schedTimeInput = document.getElementById('sched-time');
+const schedRepeatSelect = document.getElementById('sched-repeat');
+const schedSummary = document.getElementById('sched-summary');
+const schedConfirmBtn = document.getElementById('sched-confirm-btn');
+
+const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+let schedMode = 'schedule'; // 'schedule' | 'flag'
+let calViewYear, calViewMonth;   // month currently displayed in the grid
+let calSelectedDate = null;      // Date object (local, date-only)
+
+function startOfDay(d){ return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+function isSameDate(a,b){
+  return a && b && a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
+}
+
+function renderCalendar(){
+  calMonthLabel.textContent = `${monthNames[calViewMonth]} ${calViewYear}`;
+  calDaysEl.innerHTML = '';
+
+  const today = startOfDay(new Date());
+  const firstOfMonth = new Date(calViewYear, calViewMonth, 1);
+  const startWeekday = firstOfMonth.getDay();
+  const daysInMonth = new Date(calViewYear, calViewMonth+1, 0).getDate();
+  const daysInPrevMonth = new Date(calViewYear, calViewMonth, 0).getDate();
+
+  const cells = [];
+  for(let i=0;i<startWeekday;i++){
+    const dayNum = daysInPrevMonth - startWeekday + 1 + i;
+    cells.push({ date: new Date(calViewYear, calViewMonth-1, dayNum), otherMonth: true });
+  }
+  for(let d=1; d<=daysInMonth; d++){
+    cells.push({ date: new Date(calViewYear, calViewMonth, d), otherMonth: false });
+  }
+  let trail = 1;
+  while(cells.length % 7 !== 0){
+    cells.push({ date: new Date(calViewYear, calViewMonth+1, trail), otherMonth: true });
+    trail++;
+  }
+
+  cells.forEach(cell=>{
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'cal-day';
+    btn.textContent = cell.date.getDate();
+    const isPast = cell.date < today && !isSameDate(cell.date, today);
+    if(cell.otherMonth) btn.classList.add('other-month');
+    if(isSameDate(cell.date, today)) btn.classList.add('today');
+    if(isPast){ btn.classList.add('past'); btn.disabled = true; }
+    if(isSameDate(cell.date, calSelectedDate)) btn.classList.add('selected');
+    btn.addEventListener('click', ()=>{
+      calSelectedDate = cell.date;
+      if(cell.otherMonth){
+        calViewYear = cell.date.getFullYear();
+        calViewMonth = cell.date.getMonth();
+      }
+      renderCalendar();
+      updateSchedSummary();
+    });
+    calDaysEl.appendChild(btn);
+  });
+}
+
+document.getElementById('cal-prev').addEventListener('click', ()=>{
+  calViewMonth -= 1;
+  if(calViewMonth < 0){ calViewMonth = 11; calViewYear -= 1; }
+  renderCalendar();
+});
+document.getElementById('cal-next').addEventListener('click', ()=>{
+  calViewMonth += 1;
+  if(calViewMonth > 11){ calViewMonth = 0; calViewYear += 1; }
+  renderCalendar();
+});
+
+const repeatLabels = {
+  none: 'once',
+  daily: 'repeating daily',
+  weekly: 'repeating weekly',
+  biweekly: 'repeating every 2 weeks',
+  monthly: 'repeating monthly'
+};
+
+function updateSchedSummary(){
+  schedSummary.style.color = '';
+  if(!calSelectedDate){
+    schedSummary.textContent = 'Pick a date to see the schedule summary.';
+    return;
+  }
+  const dateStr = `${monthNames[calSelectedDate.getMonth()].slice(0,3)} ${calSelectedDate.getDate()}, ${calSelectedDate.getFullYear()}`;
+  const timeVal = schedTimeInput.value || '09:00';
+  const repeatText = repeatLabels[schedRepeatSelect.value] || 'once';
+  schedSummary.textContent = schedMode === 'schedule'
+    ? `Inspection set for ${dateStr} at ${timeVal}, ${repeatText}.`
+    : `Reminder set for ${dateStr} at ${timeVal}, ${repeatText}.`;
+}
+schedTimeInput.addEventListener('input', updateSchedSummary);
+schedRepeatSelect.addEventListener('change', updateSchedSummary);
+
+function openSchedulerModal(mode){
+  schedMode = mode;
+  schedSub.textContent = currentPanelData
+    ? `Panel ${currentPanelData.id} · ${currentPanelData.array}`
+    : 'No panel selected';
+
+  if(mode === 'schedule'){
+    schedTitle.textContent = 'Schedule Inspection';
+    schedCalLabel.textContent = 'Inspection date';
+    schedReasonWrap.style.display = 'none';
+    schedConfirmBtn.textContent = 'Confirm Schedule';
+  } else {
+    schedTitle.textContent = 'Flag for Review';
+    schedCalLabel.textContent = 'Reminder date';
+    schedReasonWrap.style.display = 'block';
+    schedReason.value = '';
+    schedConfirmBtn.textContent = 'Confirm & Flag';
+  }
+
+  schedTimeInput.value = '09:00';
+  schedRepeatSelect.value = 'none';
+  calSelectedDate = null;
+  const now = new Date();
+  calViewYear = now.getFullYear();
+  calViewMonth = now.getMonth();
+  renderCalendar();
+  updateSchedSummary();
+
+  schedulerOverlay.classList.add('active');
+}
+
+function closeSchedulerModal(){
+  schedulerOverlay.classList.remove('active');
+}
+
+document.getElementById('scheduler-close-btn').addEventListener('click', closeSchedulerModal);
+document.getElementById('sched-cancel-btn').addEventListener('click', closeSchedulerModal);
+schedulerOverlay.addEventListener('click', (e)=>{
+  if(e.target === schedulerOverlay) closeSchedulerModal();
+});
+
+document.getElementById('pm-schedule-btn').addEventListener('click', ()=>{
+  openSchedulerModal('schedule');
+});
+document.getElementById('pm-flag-btn').addEventListener('click', ()=>{
+  openSchedulerModal('flag');
+});
+
+schedConfirmBtn.addEventListener('click', ()=>{
+  if(!calSelectedDate){
+    schedSummary.style.color = 'var(--heat)';
+    schedSummary.textContent = 'Choose a date on the calendar first.';
+    return;
+  }
+  const dateStr = `${monthNames[calSelectedDate.getMonth()].slice(0,3)} ${calSelectedDate.getDate()}, ${calSelectedDate.getFullYear()}`;
+  const timeVal = schedTimeInput.value || '09:00';
+  const repeatText = repeatLabels[schedRepeatSelect.value] || 'once';
+  const panelId = currentPanelData ? currentPanelData.id : '—';
+
+  if(schedMode === 'schedule'){
+    showToast('Inspection scheduled', `Panel ${panelId} · ${dateStr} at ${timeVal}, ${repeatText}.`);
+  } else {
+    const reasonText = schedReason.value.trim();
+    showToast(
+      'Panel flagged for review',
+      `Panel ${panelId} flagged.${reasonText ? ' Note: ' + reasonText + '.' : ''} Reminder ${dateStr} at ${timeVal}, ${repeatText}.`
+    );
+  }
+
+  closeSchedulerModal();
+  closePanelModal();
+});
+
+/* ---------- Toast notifications ---------- */
+const toastStack = document.getElementById('toast-stack');
+function showToast(title, body){
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.innerHTML = `<div class="toast-title">${title}</div><div class="toast-body">${body}</div>`;
+  toastStack.appendChild(toast);
+  setTimeout(()=>{
+    toast.classList.add('fade-out');
+    setTimeout(()=> toast.remove(), 260);
+  }, 4200);
+}
+
+/* ---------- Fault table ---------- */
+const faultBody = document.getElementById('fault-table-body');
+function buildFaultRows(){
+  faultBody.innerHTML = '';
+  for(let i=0;i<6;i++){
+    const sev = randomFrom(severities);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="mono">P-${1000+Math.floor(Math.random()*9000)}</td>
+      <td>${randomFrom(arrays)}</td>
+      <td>${randomFrom(faultTypes)}</td>
+      <td><span class="badge ${sev}">${sev.toUpperCase()}</span></td>
+      <td class="mono">${timeAgo(Math.floor(Math.random()*180)+1)}</td>
+    `;
+    faultBody.appendChild(tr);
+  }
+}
+buildFaultRows();
+
+/* ---------- Alerts ---------- */
+const alertMessages = [
+  "Thermal anomaly confirmed on Panel B-114",
+  "Array C scan completed — 0 new faults",
+  "Diode failure suspected on Panel A-208",
+  "Soiling detected across 4 panels in Array D",
+  "Drone inspection scheduled for Array A",
+  "Micro-crack flagged on Panel C-091"
+];
+const alertsList = document.getElementById('alerts-list');
+function buildAlerts(){
+  alertsList.innerHTML = '';
+  const items = [...alertMessages].sort(()=>0.5-Math.random()).slice(0,5);
+  items.forEach((msg, i)=>{
+    const sev = randomFrom(['high','med','low']);
+    const colorVar = sev==='high' ? 'var(--heat)' : sev==='med' ? 'var(--warn)' : 'var(--ok)';
+    const li = document.createElement('li');
+    li.innerHTML = `
+      <span class="a-dot" style="background:${colorVar}"></span>
+      <div class="a-body">
+        <div class="a-title">${msg}</div>
+        <div class="a-time">${timeAgo(i*7+3)}</div>
+      </div>
+    `;
+    alertsList.appendChild(li);
+  });
+}
+buildAlerts();
+
+/* ---------- History table ---------- */
+const historyBody = document.getElementById('history-table-body');
+const inspectors = ["A. Ferreira", "J. Malik", "R. Chen", "S. Owusu"];
+function buildHistory(){
+  historyBody.innerHTML = '';
+  const today = new Date();
+  for(let i=0;i<5;i++){
+    const d = new Date(today);
+    d.setDate(d.getDate() - i*3);
+    const dateStr = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="mono">${dateStr}</td>
+      <td>${randomFrom(arrays)}</td>
+      <td class="mono">${(Math.random()*3000+2000).toFixed(0)}</td>
+      <td class="mono">${Math.floor(Math.random()*12)}</td>
+      <td>${randomFrom(inspectors)}</td>
+      <td><button class="link-btn">View Report</button></td>
+    `;
+    historyBody.appendChild(tr);
+  }
+}
+buildHistory();
+
+/* ---------- GPS hover coordinate readout ---------- */
+const GPS_BASE = { lat: 34.3917, lon: -119.0724 }; // coordinate of the fixed marker
+const GPS_MARKER_FRAC = { x: 0.485, y: 0.27 };     // matches .gps-marker's left/top %
+const GPS_VIEWBOX = { w: 400, h: 240 };            // matches the <svg viewBox>
+const GPS_METERS_PER_UNIT = 1.15;                  // ~460m across the site, isotropic scale
+
+const gpsArrayRects = [
+  { name: 'Array A', x: 40,  y: 40,  w: 90, h: 50 },
+  { name: 'Array B', x: 150, y: 40,  w: 90, h: 50 },
+  { name: 'Array C', x: 40,  y: 120, w: 90, h: 50 },
+  { name: 'Array D', x: 150, y: 120, w: 90, h: 50 }
+];
+
+function calcGpsAtFraction(xFrac, yFrac){
+  const svgX = xFrac * GPS_VIEWBOX.w;
+  const svgY = yFrac * GPS_VIEWBOX.h;
+  const markerSvgX = GPS_MARKER_FRAC.x * GPS_VIEWBOX.w;
+  const markerSvgY = GPS_MARKER_FRAC.y * GPS_VIEWBOX.h;
+
+  const dxMeters = (svgX - markerSvgX) * GPS_METERS_PER_UNIT;
+  const dyMeters = (svgY - markerSvgY) * GPS_METERS_PER_UNIT;
+
+  const dLat = -(dyMeters / 111320);
+  const dLon = dxMeters / (111320 * Math.cos(GPS_BASE.lat * Math.PI / 180));
+
+  return { lat: GPS_BASE.lat + dLat, lon: GPS_BASE.lon + dLon };
+}
+
+function formatGpsCoord(lat, lon){
+  const latDir = lat >= 0 ? 'N' : 'S';
+  const lonDir = lon >= 0 ? 'E' : 'W';
+  return `${Math.abs(lat).toFixed(5)}° ${latDir}, ${Math.abs(lon).toFixed(5)}° ${lonDir}`;
+}
+
+const gpsMapEl = document.getElementById('gps-map');
+const gpsHoverDot = document.getElementById('gps-hover-dot');
+const gpsTooltip = document.getElementById('gps-tooltip');
+const gpsRectEls = Array.from(gpsMapEl.querySelectorAll('.array-block'));
+
+gpsMapEl.addEventListener('mousemove', (e)=>{
+  const bounds = gpsMapEl.getBoundingClientRect();
+  const xFrac = (e.clientX - bounds.left) / bounds.width;
+  const yFrac = (e.clientY - bounds.top) / bounds.height;
+  if(xFrac < 0 || xFrac > 1 || yFrac < 0 || yFrac > 1) return;
+
+  const svgX = xFrac * GPS_VIEWBOX.w;
+  const svgY = yFrac * GPS_VIEWBOX.h;
+  const hit = gpsArrayRects.find(r => svgX >= r.x && svgX <= r.x + r.w && svgY >= r.y && svgY <= r.y + r.h);
+
+  gpsRectEls.forEach(el=>{
+    el.classList.toggle('hovered', !!hit && el.dataset.name === hit.name);
+  });
+
+  const { lat, lon } = calcGpsAtFraction(xFrac, yFrac);
+  const coordStr = formatGpsCoord(lat, lon);
+
+  gpsTooltip.innerHTML = hit
+    ? `<div class="gps-tooltip-title">${hit.name}</div><div class="gps-tooltip-coord">${coordStr}</div>`
+    : `<div class="gps-tooltip-coord">${coordStr}</div>`;
+
+  const hoverX = e.clientX - bounds.left;
+  const hoverY = e.clientY - bounds.top;
+  gpsHoverDot.style.left = hoverX + 'px';
+  gpsHoverDot.style.top = hoverY + 'px';
+  gpsHoverDot.classList.add('active');
+
+  let tipLeft = hoverX + 14;
+  let tipTop = hoverY + 14;
+  const tipW = gpsTooltip.offsetWidth;
+  const tipH = gpsTooltip.offsetHeight;
+  if(tipLeft + tipW > bounds.width) tipLeft = hoverX - tipW - 14;
+  if(tipTop + tipH > bounds.height) tipTop = hoverY - tipH - 14;
+  gpsTooltip.style.left = tipLeft + 'px';
+  gpsTooltip.style.top = tipTop + 'px';
+  gpsTooltip.classList.add('active');
+});
+
+gpsMapEl.addEventListener('mouseleave', ()=>{
+  gpsHoverDot.classList.remove('active');
+  gpsTooltip.classList.remove('active');
+  gpsRectEls.forEach(el => el.classList.remove('hovered'));
+});
+
+/* ---------- Live updates (simulated) ---------- */
+let scanned = ('540');
+let faults = 17;
+setInterval(()=>{
+  scanned += Math.floor(Math.random()*15);
+  if(scanned > 1200) scanned = (530);
+  document.getElementById('stat-scanned').textContent = scanned.toLocaleString();
+
+  if(Math.random() > 0.85){
+    faults += 1;
+    document.getElementById('stat-faults').textContent = faults;
+  }
+
+  const temp = (39 + Math.random()*6).toFixed(1);
+  document.getElementById('stat-temp').textContent = temp + '°C';
+
+  const gpsAccuracy = (0.8 + Math.random()*1.6).toFixed(1);
+  document.getElementById('gps-status').textContent = `±${gpsAccuracy} m · GPS LOCK`;
+}, 2500);
+</script>
+</body>
+</html>
