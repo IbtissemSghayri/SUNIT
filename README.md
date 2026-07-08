@@ -5,7 +5,9 @@ It is an esp32-based drone. It has a camera used to detect solar panals defects 
 The design of the drone integrates a camera, a gps and an mpu-6050.  
 
 # How does it work ?
-The drone is equiped with a thermal camera that will scan the panals and connect in real time with a dashboard in order to analyse the panals data and detect defeated ones and the ones overheating, before the damage would happen. The drone is monittored through a controller using esp32 which is connected to the drone through a transmitter-receiver module (RC communication)
+The drone is equiped with a thermal camera that will scan the panals and connect in real time with a dashboard in order to analyse the panals data and detect defeated ones and the ones overheating, before the damage would happen.  
+The drone is also equipped with a noamrl camera used to detect defects in the solar panals.  
+The drone is monittored through a controller using esp32 which is connected to the drone through a transmitter-receiver module (RC communication)  
 
  # Components of the drone 
 1 Chassis for the drone  
