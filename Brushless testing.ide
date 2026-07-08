@@ -1,0 +1,31 @@
+#include <ESP32Servo.h>
+const int ESC_PIN = 13;
+
+Servo myESC;
+void setup() {
+  Serial.begin(115200);
+  Serial.println("--- Test Moteur Brushless ---");
+  myESC.attach(ESC_PIN, 1000, 2000);
+  Serial.println("Armement de l'ESC... (Signal au minimum)");
+  myESC.write(0); // Envoie un signal de 0% de puissance
+  delay(5000); 
+  Serial.println("ESC Arme et pret !");
+}
+
+void loop() {
+  Serial.println("Acceleration...");
+  for (int vitesse = 0; vitesse <= 30; vitesse++) {
+    myESC.write(vitesse);
+    Serial.print("Vitesse : "); Serial.print(vitesse); Serial.println("%");
+    delay(150); // Laisse le temps au moteur de réagir
+  }
+  delay(2000); 
+  Serial.println("Deceleration...");
+  for (int vitesse = 30; vitesse >= 0; vitesse--) {
+    myESC.write(vitesse);
+    Serial.print("Vitesse : "); Serial.print(vitesse); Serial.println("%");
+    delay(150);
+  }
+  Serial.println("Moteur a l'arret.");
+  delay(5000); // Pause de 5 secondes avant de recommencer
+}
