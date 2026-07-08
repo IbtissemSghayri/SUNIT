@@ -9,8 +9,8 @@ The drone is equiped with a thermal camera that will scan the panals and connect
 
 
  # Components of the drone 
-1 Chassis for the drone
-4 Brushless Motor
+1 Chassis for the drone \\
+4 Brushless Motor \\
 4 Electronic Speed Controller (ESC) 30A
 1 MPU-6050
 1 PDB XT60
