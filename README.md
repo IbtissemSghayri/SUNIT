@@ -32,7 +32,7 @@ The testing of the Brushless motors was done according to this scheme
 Wiring of the drone : 
 <img width="974" height="622" alt="image" src="https://github.com/user-attachments/assets/bfe10ea9-ff20-4b28-aee3-7b842af1917a" />
 
-PDB XT60 is replaced with a DC-DC Step-Down Buck Converter Power Supply Module 24V 12V 9V to 5V 5A 25W in real-life as i did not find that component.
+PDB XT60 is replaced with a DC-DC Step-Down Buck Converter Power Supply Module 24V 12V 9V to 5V 5A 25W  for the actual prototype in real-life as i did not find that component.
 
 # Wiring of the controller
 
