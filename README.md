@@ -39,7 +39,7 @@ PDB XT60 is replaced with a DC-DC Step-Down Buck Converter Power Supply Module 2
 # Setbacks and mistakes
 ---> I thought that using 3 Lithium batteries 5V connected in series with a bms to give me stable 12V will give me enough energy to rotate the brushless.   That was not the case i figured that the Lipo batterie were not replaceable.   
 Why ? becayse a 3S LiPo is built to deliver the burst current the A2212 motors need that the 3 separate cells wired in series (especially that mine are pulled from an old laptop) can not deliver enough current ! The answer is in current !
-
+---> Some ESC are equipped with 2 extra thin wires I spent a lot of time checking the data sheet in order to understand that as i was used to the escs without these two, one is red the other is black. How to wire them ?   They are used to supply the controller of the esc's. You should connect them to 5V stable ! Using a DC-DC step-down buck converter would fix that. 
 
 # Software used
 Arduino.ide as the programming and development environment  
