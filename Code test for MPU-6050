@@ -1,0 +1,37 @@
+#include <Wire.h>
+#include <Adafruit_MPU6050.h>
+#include <Adafruit_Sensor.h>
+
+Adafruit_MPU6050 mpu;
+
+void setup() {
+  Serial.begin(115200);
+  while (!Serial) delay(10);
+  Serial.println("--- Test du Capteur MPU6050 ---");
+  // SDA = 21, SCL = 22
+  Wire.begin(21, 22);
+  Serial.println("MPU6050 détecté avec succès !");
+
+mpu.setAccelerometerRange(MPU6050_RANGE_8_G); 
+  mpu.setGyroRange(MPU6050_RANGE_500_DEG);
+  mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
+
+  delay(100);
+}
+
+void loop() {
+  sensors_event_t a, g, temp;
+  mpu.getEvent(&a, &g, &temp);
+  Serial.print("Accélération X: "); Serial.print(a.acceleration.x, 2);
+  Serial.print(" | Y: "); Serial.print(a.acceleration.y, 2);
+  Serial.print(" | Z: "); Serial.print(a.acceleration.z, 2);
+  Serial.println(" m/s²");
+  Serial.print("Rotation     X: "); Serial.print(g.gyro.x, 2);
+  Serial.print(" | Y: "); Serial.print(g.gyro.y, 2);
+  Serial.print(" | Z: "); Serial.print(g.gyro.z, 2);
+  Serial.println(" rad/s");
+  Serial.print("Température  : "); Serial.print(temp.temperature, 1);
+  Serial.println(" °C");
+
+  delay(500); // Pause d'une demi-seconde entre chaque lecture
+}
